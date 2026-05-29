@@ -3,15 +3,42 @@ import axios from "axios";
 import "./App.css";
 
 function App() {
+  const [allTournaments, setAllTournaments] = useState([]);
   const [tournaments, setTournaments] = useState([]);
+
   const [city, setCity] = useState("");
   const [maxMiles, setMaxMiles] = useState(50);
   const [userLocation, setUserLocation] = useState(null);
   const [locationMessage, setLocationMessage] = useState("");
 
+  const [sourceFilter, setSourceFilter] = useState("All");
+  const [categoryFilter, setCategoryFilter] = useState("All");
+  const [maxPrice, setMaxPrice] = useState(500);
+  const [sortOption, setSortOption] = useState("date");
+
   const [aiQuestion, setAiQuestion] = useState("");
   const [aiMessage, setAiMessage] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+
+  const API_BASE = "http://localhost:5000";
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "TBD";
+
+    const date = new Date(dateString);
+
+    if (Number.isNaN(date.getTime())) {
+      return dateString;
+    }
+
+    return date.toLocaleString([], {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit"
+    });
+  };
 
   const getDistance = (lat1, lon1, lat2, lon2) => {
     const R = 3958.8;
@@ -29,13 +56,15 @@ function App() {
   };
 
   const convertDate = (dateString) => {
-    const [datePart, timePart] = dateString.split(" ");
+    if (!dateString) return new Date(9999, 0, 1);
+    const date = new Date(dateString);
+    if (!Number.isNaN(date.getTime())) return date;
 
-    if (!datePart || !timePart) return new Date(dateString);
+    const [datePart, timePart] = dateString.split(" ");
+    if (!datePart || !timePart) return new Date(9999, 0, 1);
 
     const match = timePart.match(/(\d+):(\d+)(AM|PM)/);
-
-    if (!match) return new Date(dateString);
+    if (!match) return new Date(9999, 0, 1);
 
     let hours = Number(match[1]);
     const minutes = Number(match[2]);
@@ -52,15 +81,105 @@ function App() {
     );
   };
 
-  const sortByDate = (data) => {
-    return [...data].sort((a, b) => convertDate(a.date) - convertDate(b.date));
+  const getMaxUtrFromLevel = (level) => {
+    if (!level) return 0;
+
+    const rangeMatch = level.match(/UTR\s*([\d.]+)\s*-\s*([\d.]+)/i);
+    if (rangeMatch) return parseFloat(rangeMatch[2]);
+
+    const singleMatch = level.match(/UTR\s*([\d.]+)/i);
+    if (singleMatch) return parseFloat(singleMatch[1]);
+
+    return 0;
+  };
+
+  const getTournamentHighestUtr = (tournament) => {
+    const directUtr = Number(tournament.highestUtrPlayer);
+
+    if (!Number.isNaN(directUtr) && directUtr > 0) {
+      return directUtr;
+    }
+
+    return getMaxUtrFromLevel(tournament.level);
+  };
+
+  const showPlayers = (players) => {
+    if (players === 0 || players === "0") return "0";
+    if (players === null || players === undefined || players === "") return "TBD";
+    return players;
+  };
+
+  const showHighestUtrPlayer = (tournament) => {
+    const highest = tournament.highestUtrPlayer;
+
+    if (highest !== null && highest !== undefined && highest !== "") {
+      return highest;
+    }
+
+    const maxUtr = getMaxUtrFromLevel(tournament.level);
+
+    if (maxUtr > 0) {
+      return maxUtr;
+    }
+
+    return "TBD";
+  };
+
+  const sortTournaments = (data) => {
+    const sorted = [...data];
+
+    if (sortOption === "date") {
+      sorted.sort((a, b) => convertDate(a.date) - convertDate(b.date));
+    }
+
+    if (sortOption === "priceLow") {
+      sorted.sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
+    }
+
+    if (sortOption === "priceHigh") {
+      sorted.sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
+    }
+
+    if (sortOption === "distance") {
+      sorted.sort((a, b) => (a.distance ?? 9999) - (b.distance ?? 9999));
+    }
+
+    if (sortOption === "highestUtr") {
+      sorted.sort(
+        (a, b) => getTournamentHighestUtr(b) - getTournamentHighestUtr(a)
+      );
+    }
+
+    return sorted;
+  };
+
+  const applyFilters = (data) => {
+    let filtered = [...data];
+
+    if (sourceFilter !== "All") {
+      filtered = filtered.filter((t) => t.source === sourceFilter);
+    }
+
+    if (categoryFilter !== "All") {
+      filtered = filtered.filter((t) => t.category === categoryFilter);
+    }
+
+    filtered = filtered.filter((t) => Number(t.price || 0) <= maxPrice);
+
+    return sortTournaments(filtered);
   };
 
   const fetchTournaments = () => {
     axios
-      .get("http://localhost:5000/api/tournaments")
+      .get(`${API_BASE}/api/tournaments-db`)
       .then((res) => {
-        let data = res.data;
+        let data = res.data.map((t) => ({
+          ...t,
+          price: Number(t.price || 0),
+          latitude: Number(t.latitude),
+          longitude: Number(t.longitude)
+        }));
+
         let originLocation = userLocation;
 
         if (city.trim() !== "") {
@@ -79,6 +198,7 @@ function App() {
             );
           } else {
             setLocationMessage("City not found in tournament list.");
+            setAllTournaments([]);
             setTournaments([]);
             return;
           }
@@ -102,24 +222,58 @@ function App() {
             .filter((t) => t.distance <= maxMiles);
         }
 
-        setTournaments(sortByDate(data));
+        setAllTournaments(data);
+        setTournaments(applyFilters(data));
       })
-      .catch((err) => console.error(err));
+      .catch((err) => {
+        console.error(err);
+        setLocationMessage("Could not load tournaments from SQL Server.");
+      });
+  };
+
+  const resetFilters = () => {
+    setSourceFilter("All");
+    setCategoryFilter("All");
+    setMaxPrice(500);
+    setSortOption("date");
+    setCity("");
+    setLocationMessage("");
+    setTournaments(sortTournaments(allTournaments));
   };
 
   const askAiTennisPro = () => {
     if (!aiQuestion.trim()) return;
 
+    const question = aiQuestion.toLowerCase();
+
+    if (
+      question.includes("highest utr") ||
+      question.includes("highest utrs") ||
+      question.includes("best utr") ||
+      question.includes("top utr")
+    ) {
+      const sorted = [...allTournaments].sort(
+        (a, b) => getTournamentHighestUtr(b) - getTournamentHighestUtr(a)
+      );
+
+      setSortOption("highestUtr");
+      setTournaments(applyFilters(sorted));
+      setAiMessage("Showing tournaments with the highest UTR levels first.");
+      return;
+    }
+
     setAiLoading(true);
     setAiMessage("AI Tennis Pro is thinking...");
 
     axios
-      .post("http://localhost:5000/api/ai/ask", {
+      .post(`${API_BASE}/api/ai/ask`, {
         question: aiQuestion
       })
       .then((res) => {
+        const data = res.data.tournaments || [];
         setAiMessage(res.data.message);
-        setTournaments(sortByDate(res.data.tournaments));
+        setAllTournaments(data);
+        setTournaments(applyFilters(data));
       })
       .catch((err) => {
         console.error(err);
@@ -159,6 +313,10 @@ function App() {
   useEffect(() => {
     fetchTournaments();
   }, []);
+
+  useEffect(() => {
+    setTournaments(applyFilters(allTournaments));
+  }, [sourceFilter, categoryFilter, maxPrice, sortOption]);
 
   return (
     <div className="page">
@@ -202,19 +360,83 @@ function App() {
         </div>
       </section>
 
+      <section className="filters">
+        <div className="filterHeader">
+          <h2>Filters</h2>
+          <button className="resetBtn" onClick={resetFilters}>
+            Reset
+          </button>
+        </div>
+
+        <div className="filterGrid">
+          <div className="filterItem">
+            <label>Source</label>
+            <select
+              value={sourceFilter}
+              onChange={(e) => setSourceFilter(e.target.value)}
+            >
+              <option value="All">All Sources</option>
+              <option value="UTR">UTR</option>
+              <option value="USTA">USTA</option>
+              <option value="Local">Local</option>
+            </select>
+          </div>
+
+          <div className="filterItem">
+            <label>Category</label>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+            >
+              <option value="All">All Categories</option>
+              <option value="Junior">Junior</option>
+              <option value="Adult">Adult</option>
+              <option value="Prize Money">Prize Money</option>
+            </select>
+          </div>
+
+          <div className="filterItem">
+            <label>Max Price: ${maxPrice}</label>
+            <input
+              type="range"
+              min="0"
+              max="500"
+              step="5"
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(Number(e.target.value))}
+            />
+          </div>
+
+          <div className="filterItem">
+            <label>Sort By</label>
+            <select
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value)}
+            >
+              <option value="date">Soonest Date</option>
+              <option value="distance">Closest</option>
+              <option value="priceLow">Cheapest</option>
+              <option value="priceHigh">Most Expensive</option>
+              <option value="highestUtr">Highest UTR</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
       <section className="results">
         <h2>Upcoming Tournaments</h2>
+        <p className="resultCount">{tournaments.length} tournaments found</p>
 
         {tournaments.length === 0 ? (
-          <p className="empty">No tournaments found. Try increasing the miles.</p>
+          <p className="empty">No tournaments found. Try changing your filters.</p>
         ) : (
           tournaments.map((t) => (
             <div className="card" key={t.id}>
               <div className="cardTop">
-                <span className={`badge ${t.source.toLowerCase()}`}>
+                <span className={`badge ${(t.source || "local").toLowerCase()}`}>
                   {t.source}
                 </span>
-                <span className="date">{t.date}</span>
+                <span className="date">{formatDate(t.date)}</span>
               </div>
 
               <h3>{t.name}</h3>
@@ -229,8 +451,21 @@ function App() {
                   <span>Level</span>
                   {t.level}
                 </p>
+
                 <p>
                   <span>Entry</span>${t.price}
+                </p>
+
+                <p>
+                  <span>Players</span>
+                  {showPlayers(t.players)}
+                </p>
+
+                <p>
+                  <span>Highest UTR Player</span>
+                  <strong className="utrBubble">
+                    {showHighestUtrPlayer(t)}
+                  </strong>
                 </p>
               </div>
 
@@ -252,7 +487,8 @@ function App() {
 
         <p>
           Ask things like “show junior tournaments,” “find prize money
-          tournaments,” or “show tournaments under $50.”
+          tournaments,” “show tournaments under $50,” or “highest UTR
+          tournaments.”
         </p>
 
         <div className="aiSearchBox">

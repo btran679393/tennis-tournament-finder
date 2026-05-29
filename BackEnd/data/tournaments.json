@@ -9,6 +9,8 @@
     "date": "2026-05-23 8:00AM",
     "level": "UTR 1.0 - 5.0 • Co-ed • Singles",
     "price": 88.13,
+    "players": "45",
+    "highestUtrPlayer": "4.xx",
     "registrationLink": "https://app.utrsports.net/events/337021",
     "latitude": 45.5152,
     "longitude": -122.6784
@@ -22,6 +24,8 @@
     "date": "2026-05-22 3:30PM",
     "level": "Indoor Hardcourt Singles",
     "price": 40,
+    "players": "4",
+    "highestUtrPlayer": "3.xx-5.xx",
     "registrationLink": "https://app.utrsports.net/events/377059",
     "latitude": 47.7909,
     "longitude": -122.3082
@@ -35,6 +39,8 @@
     "date": "2026-05-22 5:00PM",
     "level": "Indoor Hardcourt Singles",
     "price": 40,
+    "players": "6",
+    "highestUtrPlayer": "1.xx-3.xx",
     "registrationLink": "https://app.utrsports.net/events/377070",
     "latitude": 47.7909,
     "longitude": -122.3082
@@ -48,6 +54,8 @@
     "date": "2026-05-22 6:30PM",
     "level": "Indoor Hardcourt Doubles",
     "price": 40,
+    "players": "2",
+    "highestUtrPlayer": "2.xx",
     "registrationLink": "https://app.utrsports.net/events/377048",
     "latitude": 47.7909,
     "longitude": -122.3082
@@ -61,6 +69,8 @@
     "date": "2026-05-22 7:30PM",
     "level": "Indoor Hardcourt Singles • UTR 4-6",
     "price": 60,
+    "players": "0",
+    "highestUtrPlayer": "TBD",
     "registrationLink": "https://app.utrsports.net/events/378509",
     "latitude": 47.6979,
     "longitude": -122.021
@@ -74,6 +84,8 @@
     "date": "2026-05-22 8:00PM",
     "level": "Indoor Hardcourt Singles",
     "price": 60,
+    "players": "0",
+    "highestUtrPlayer": "TBD",
     "registrationLink": "https://app.utrsports.net/events/364510",
     "latitude": 47.4384,
     "longitude": -122.2619
@@ -88,6 +100,8 @@
     "date": "2026-05-22 8:00PM",
     "level": "Indoor Hardcourt Singles",
     "price": 45,
+    "players": "9",
+    "highestUtrPlayer": "4.xx",
     "registrationLink": "https://app.utrsports.net/events/377388",
     "latitude": 47.7404,
     "longitude": -122.1515
@@ -102,6 +116,8 @@
     "date": "2026-05-23 4:00PM",
     "level": "Singles Junior Circuits • UTR 1-4.99",
     "price": 65,
+    "players": "43",
+    "highestUtrPlayer": "2.xx",
     "registrationLink": "https://app.utrsports.net/events/370188",
     "latitude": 47.1198,
     "longitude": -122.4346
@@ -116,6 +132,8 @@
     "date": "2026-05-23 4:00PM",
     "level": "Indoor Hardcourt Doubles • UTR 1-4.99",
     "price": 16,
+    "players": "28",
+    "highestUtrPlayer": "4.xx",
     "registrationLink": "https://app.utrsports.net/events/360793",
     "latitude": 47.585,
     "longitude": -122.2976
@@ -130,6 +148,8 @@
     "date": "2026-05-23 8:00AM",
     "level": "Level 6 Junior Singles",
     "price": 80,
+    "players": "78",
+    "highestUtrPlayer": "TBD",
     "registrationLink": "https://playtennis.usta.com/Competitions/gorintukwila/Tournaments/Overview/e29d5c64-ffd7-4e90-84e7-aada824a532d",
     "latitude": 47.4384,
     "longitude": -122.2619
@@ -144,6 +164,8 @@
     "date": "2026-05-23 4:30PM",
     "level": "Coed 10 & Under - Green Singles",
     "price": 60,
+    "players": "37",
+    "highestUtrPlayer": "TBD",
     "registrationLink": "https://playtennis.usta.com/Competitions/redmondtenniscenter/Tournaments/Overview/3c7d033f-d5de-4fe9-b74b-fd26e8b16cf7",
     "latitude": 47.6979,
     "longitude": -122.021
@@ -158,6 +180,8 @@
     "date": "2026-05-21 5:00PM",
     "level": "NTRP Adult Singles/Doubles",
     "price": 39,
+    "players": "265",
+    "highestUtrPlayer": "TBD",
     "registrationLink": "https://playtennis.usta.com/Competitions/boeingemployeestennisclub/Tournaments/Overview/5fac3c5e-d485-4be7-b375-7dd6bb0e7253",
     "latitude": 47.4235,
     "longitude": -122.2497
@@ -172,6 +196,8 @@
     "date": "2026-05-24 3:30PM",
     "level": "10U Orange Singles",
     "price": 70,
+    "players": "10",
+    "highestUtrPlayer": "TBD",
     "registrationLink": "https://playtennis.usta.com/Competitions/eastsidetenniscenter/Tournaments/Overview/6934347a-a1d8-4d9d-adc5-60dc8ce48e6d",
     "latitude": 47.6965,
     "longitude": -122.1848
@@ -186,6 +212,8 @@
     "date": "2026-05-24 4:30PM",
     "level": "Level 7 Coed 12 & Under Singles",
     "price": 60,
+    "players": "25",
+    "highestUtrPlayer": "TBD",
     "registrationLink": "https://playtennis.usta.com/Competitions/gorintukwila/Tournaments/Overview/a8cd925b-1f0a-4c55-a11c-75ef6739008d",
     "latitude": 47.4384,
     "longitude": -122.2619
@@ -200,6 +228,8 @@
     "level": "UTR 1.0 - 16.0 • Co-ed • Singles/Doubles",
     "price": 73.13,
     "partnerPrice": 133.13,
+    "players": "21",
+    "highestUtrPlayer": "5.xx",
     "registrationLink": "https://app.utrsports.net/events/374601",
     "latitude": 45.4871,
     "longitude": -122.8037
@@ -213,6 +243,8 @@
     "date": "2026-05-26 7:30PM",
     "level": "Indoor Hardcourt Singles",
     "price": 45,
+    "players": "1",
+    "highestUtrPlayer": "3.xx",
     "registrationLink": "https://app.utrsports.net/events/375385",
     "latitude": 47.2318,
     "longitude": -122.2937
@@ -227,6 +259,8 @@
     "level": "UTR 1.0 - 16.0 • Co-ed • Singles",
     "price": 40,
     "doublesPrice": 30,
+    "players": "14",
+    "highestUtrPlayer": "6.xx",
     "registrationLink": "https://app.utrsports.net/events/372079",
     "latitude": 44.5646,
     "longitude": -123.262
@@ -241,6 +275,8 @@
     "date": "2026-05-30 8:00AM",
     "level": "UTR 1.0 - 5.0 • Co-ed • Singles",
     "price": 83.13,
+    "players": "43",
+    "highestUtrPlayer": "3.xx-5.xx",
     "registrationLink": "https://app.utrsports.net/events/337022",
     "latitude": 45.5152,
     "longitude": -122.6784
@@ -254,6 +290,8 @@
     "date": "2026-06-01 8:00AM",
     "level": "Singles",
     "price": 12.6,
+    "players": "0",
+    "highestUtrPlayer": "TBD",
     "registrationLink": "https://app.utrsports.net/events/379190",
     "latitude": 44.5646,
     "longitude": -123.262
@@ -267,6 +305,8 @@
     "date": "2026-06-05 8:00AM",
     "level": "Level 6 Tournament",
     "price": 37,
+    "players": "32",
+    "highestUtrPlayer": "TBD",
     "registrationLink": "https://playtennis.usta.com/Competitions/kellyjohnsonfoundationor/Tournaments/Overview/f90308df-8634-43e7-8b6d-a3f95636252b",
     "latitude": 45.5229,
     "longitude": -122.9898
@@ -281,6 +321,8 @@
     "date": "2026-06-08 8:00AM",
     "level": "Level 4 Open • PRIZE Money",
     "price": 75,
+    "players": "38",
+    "highestUtrPlayer": "TBD",
     "registrationLink": "https://playtennis.usta.com/Competitions/irvingtonclub/Tournaments/Overview/e7e83ac4-1828-4e56-b71e-66eb62bc56c6",
     "latitude": 45.544,
     "longitude": -122.6431
@@ -295,6 +337,8 @@
     "date": "2026-06-12 8:00AM",
     "level": "Adult Singles/Doubles",
     "price": 69,
+    "players": "10",
+    "highestUtrPlayer": "TBD",
     "registrationLink": "https://playtennis.usta.com/Competitions/mintvalleyracquetfitnesscomplex/Tournaments/Overview/231c5188-e0d0-43f2-8bb7-302e5ecd76da",
     "latitude": 46.1382,
     "longitude": -122.9382
@@ -309,6 +353,8 @@
     "date": "2026-06-13 8:00AM",
     "level": "Boys and Girls Level 6",
     "price": 75,
+    "players": "91",
+    "highestUtrPlayer": "TBD",
     "registrationLink": "https://playtennis.usta.com/Competitions/vancouver-tennis-center/Tournaments/Overview/f14675cc-987d-4125-88be-157660cf3e74",
     "latitude": 45.6387,
     "longitude": -122.6615
@@ -322,6 +368,8 @@
     "date": "2026-06-15 8:00AM",
     "level": "Singles",
     "price": 453.13,
+    "players": "13",
+    "highestUtrPlayer": "9.xx",
     "registrationLink": "https://app.utrsports.net/events/364520",
     "latitude": 45.4871,
     "longitude": -122.8037
@@ -335,6 +383,8 @@
     "date": "2026-06-19 9:00AM",
     "level": "Singles",
     "price": 88.13,
+    "players": "5",
+    "highestUtrPlayer": "2.xx",
     "registrationLink": "https://app.utrsports.net/events/369562",
     "latitude": 45.5152,
     "longitude": -122.6784
@@ -348,6 +398,8 @@
     "date": "2026-06-19 8:00AM",
     "level": "Wheelchair Tennis Tournament",
     "price": 75,
+    "players": "6",
+    "highestUtrPlayer": "TBD",
     "registrationLink": "https://playtennis.usta.com/Competitions/northwestwheelchairtennisassociation/Tournaments/Overview/19e09915-60f8-43c5-97fd-96862bc51ac0",
     "latitude": 44.893,
     "longitude": -123.0339
@@ -362,6 +414,8 @@
     "date": "2026-06-19 8:00AM",
     "level": "Singles Tournament",
     "price": 80,
+    "players": "27",
+    "highestUtrPlayer": "TBD",
     "registrationLink": "https://playtennis.usta.com/Competitions/kidsntennisinc/Tournaments/Overview/d2f4c854-4918-4af4-a10e-2df9715c1f50",
     "latitude": 45.6387,
     "longitude": -122.6615
@@ -376,6 +430,8 @@
     "date": "2026-06-20 8:00AM",
     "level": "Boys and Girls Level 7",
     "price": 70,
+    "players": "43",
+    "highestUtrPlayer": "TBD",
     "registrationLink": "https://playtennis.usta.com/Competitions/vancouver-tennis-center/Tournaments/Overview/e7b92041-5854-4659-8f10-ac2c01524dff",
     "latitude": 45.6387,
     "longitude": -122.6615
@@ -389,6 +445,8 @@
     "date": "2026-06-22 8:00AM",
     "level": "Singles",
     "price": 453.13,
+    "players": "7",
+    "highestUtrPlayer": "4.xx",
     "registrationLink": "https://app.utrsports.net/events/364519",
     "latitude": 45.4871,
     "longitude": -122.8037
@@ -403,6 +461,8 @@
     "date": "2026-06-29 8:00AM",
     "level": "Prize Money Event • Bubble Hardcourt Singles / Doubles",
     "price": 75,
+    "players": "12",
+    "highestUtrPlayer": "12.48",
     "registrationLink": "https://app.utrsports.net/events/358865",
     "latitude": 45.4526,
     "longitude": -122.6706

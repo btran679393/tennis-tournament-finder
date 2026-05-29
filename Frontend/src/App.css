@@ -11,12 +11,12 @@ body {
 
 .page {
   min-height: 100vh;
-  padding: 32px 18px;
+  padding: 32px 18px 120px;
 }
 
 .hero {
   max-width: 900px;
-  margin: 0 auto 32px;
+  margin: 0 auto 28px;
   text-align: center;
   background: white;
   padding: 42px 24px;
@@ -121,6 +121,76 @@ h1 {
   margin: 0;
 }
 
+.filters {
+  max-width: 900px;
+  margin: 0 auto 30px;
+  background: white;
+  padding: 24px;
+  border-radius: 20px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.07);
+  border: 1px solid #e5e7eb;
+}
+
+.filterHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.filterHeader h2 {
+  font-size: 24px;
+  margin: 0;
+  color: #111827;
+}
+
+.resetBtn {
+  background: #111827;
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.resetBtn:hover {
+  background: #374151;
+}
+
+.filterGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.filterItem {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filterItem label {
+  font-weight: 700;
+  color: #111827;
+  font-size: 14px;
+}
+
+.filterItem select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  font-size: 14px;
+  background: white;
+  cursor: pointer;
+}
+
+.filterItem input[type="range"] {
+  width: 100%;
+  cursor: pointer;
+}
+
 .results {
   max-width: 900px;
   margin: 0 auto;
@@ -128,8 +198,15 @@ h1 {
 
 .results h2 {
   font-size: 26px;
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   text-align: center;
+}
+
+.resultCount {
+  text-align: center;
+  color: #64748b;
+  margin-top: 0;
+  margin-bottom: 20px;
 }
 
 .card {
@@ -194,25 +271,40 @@ h1 {
 }
 
 .details {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   margin-bottom: 20px;
 }
 
 .details p {
   background: #f3f4f6;
-  padding: 12px 16px;
-  border-radius: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
   margin: 0;
-  flex: 1;
   text-align: center;
+  min-height: 95px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .details span {
   display: block;
   font-size: 13px;
   color: #6b7280;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
+}
+
+.utrBubble {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .registerBtn {
@@ -225,11 +317,12 @@ h1 {
   padding: 12px 18px;
   border-radius: 12px;
   font-weight: 700;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, transform 0.15s ease;
 }
 
 .registerBtn:hover {
   background: #15803d;
+  transform: translateY(-1px);
 }
 
 .empty {
@@ -306,9 +399,27 @@ h1 {
   color: #475569;
 }
 
+@media (max-width: 900px) {
+  .filterGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .details {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 @media (max-width: 650px) {
+  .page {
+    padding: 20px 12px 150px;
+  }
+
   h1 {
     font-size: 32px;
+  }
+
+  .hero {
+    padding: 32px 18px;
   }
 
   .searchBox {
@@ -320,8 +431,27 @@ h1 {
     width: 100%;
   }
 
-  .details {
+  .filterGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .filterHeader {
     flex-direction: column;
+    gap: 12px;
+  }
+
+  .resetBtn {
+    width: 100%;
+  }
+
+  .cardTop {
+    align-items: flex-start;
+    gap: 12px;
+    flex-direction: column;
+  }
+
+  .details {
+    grid-template-columns: 1fr;
   }
 
   .sliderBox {

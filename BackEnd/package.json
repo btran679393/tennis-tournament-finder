@@ -19,10 +19,12 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "msnodesqlv8": "^5.2.0",
     "mssql": "^12.5.4",
     "node-cron": "^4.2.1",
     "playwright": "^1.60.0",
     "puppeteer": "^24.42.0"
+  },
+  "optionalDependencies": {
+    "msnodesqlv8": "^5.2.0"
   }
 }

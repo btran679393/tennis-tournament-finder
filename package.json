@@ -1,0 +1,11 @@
+{
+  "name": "tennis-tournament-finder",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install --prefix BackEnd && npm install --prefix Frontend",
+    "dev:backend": "npm start --prefix BackEnd",
+    "dev:frontend": "npm run dev --prefix Frontend -- --host 127.0.0.1",
+    "build": "npm run build --prefix Frontend",
+    "lint": "npm run lint --prefix Frontend"
+  }
+}

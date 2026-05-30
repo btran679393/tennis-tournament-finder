@@ -4,14 +4,14 @@ const express = require("express");
 const cors = require("cors");
 const cron = require("node-cron");
 
-const { poolPromise } = require("./db");
 const scrapeUTRToSql = require("./scrapers/scrapeUtrToSql");
 
 const tournamentRoutes = require("./routes/tournaments");
 const aiRoutes = require("./routes/ai");
+const { getTournamentSearch } = require("./services/tournamentService");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5050;
 
 console.log("Loaded server.js with SQL database route");
 
@@ -28,35 +28,26 @@ app.get("/api/test", (req, res) => {
 
 app.get("/api/tournaments-db", async (req, res) => {
   try {
-    const pool = await poolPromise;
-
-    if (!pool) {
-      return res.status(500).json({ error: "Database pool was not created" });
-    }
-
-    const result = await pool.request().query(`
-      SELECT *
-      FROM Tournaments
-      ORDER BY date ASC
-    `);
-
-    res.json(result.recordset);
+    const result = await getTournamentSearch(req.query);
+    res.json(result.tournaments);
   } catch (err) {
-    console.error("SQL Server error:", err);
+    console.error("Tournament API error:", err);
     res.status(500).json({ error: err.message });
   }
 });
 
-cron.schedule("0 */6 * * *", async () => {
-  console.log("Running scheduled UTR scrape...");
+if (process.env.ENABLE_SCHEDULED_SCRAPE === "true") {
+  cron.schedule("0 */6 * * *", async () => {
+    console.log("Running scheduled UTR scrape...");
 
-  try {
-    await scrapeUTRToSql();
-    console.log("Scheduled UTR scrape finished");
-  } catch (err) {
-    console.error("Scheduled UTR scrape failed:", err.message);
-  }
-});
+    try {
+      await scrapeUTRToSql();
+      console.log("Scheduled UTR scrape finished");
+    } catch (err) {
+      console.error("Scheduled UTR scrape failed:", err.message);
+    }
+  });
+}
 
 app.use("/api/tournaments", tournamentRoutes);
 app.use("/api/ai", aiRoutes);

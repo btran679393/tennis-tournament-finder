@@ -1,287 +1,179 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import "./App.css";
 
-function App() {
-  const [allTournaments, setAllTournaments] = useState([]);
-  const [tournaments, setTournaments] = useState([]);
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:5050";
+const SAVED_FILTERS_KEY = "tennisTournamentFinder.filters";
 
-  const [city, setCity] = useState("");
-  const [maxMiles, setMaxMiles] = useState(50);
+const defaultFilters = {
+  q: "",
+  city: "",
+  source: "All",
+  category: "All",
+  maxPrice: 500,
+  minUtr: "",
+  maxUtr: "",
+  maxMiles: 50,
+  dateRange: "future",
+  sort: "date"
+};
+
+function loadSavedFilters() {
+  try {
+    const saved = localStorage.getItem(SAVED_FILTERS_KEY);
+    return saved ? { ...defaultFilters, ...JSON.parse(saved) } : defaultFilters;
+  } catch {
+    return defaultFilters;
+  }
+}
+
+function formatDate(dateString) {
+  if (!dateString) return "TBD";
+
+  const date = new Date(dateString);
+
+  if (Number.isNaN(date.getTime())) {
+    return dateString;
+  }
+
+  return date.toLocaleString([], {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit"
+  });
+}
+
+function getDayGroup(dateString) {
+  if (!dateString) return "Date TBD";
+
+  const date = new Date(dateString);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Date TBD";
+  }
+
+  return date.toLocaleDateString([], {
+    weekday: "long",
+    month: "long",
+    day: "numeric"
+  });
+}
+
+function showValue(value, fallback = "TBD") {
+  if (value === 0 || value === "0") return "0";
+  if (value === null || value === undefined || value === "") return fallback;
+  return value;
+}
+
+function showUtrRange(tournament) {
+  if (
+    typeof tournament.minUtr === "number" &&
+    typeof tournament.maxUtr === "number"
+  ) {
+    if (tournament.minUtr === tournament.maxUtr) {
+      return tournament.maxUtr;
+    }
+
+    return `${tournament.minUtr} - ${tournament.maxUtr}`;
+  }
+
+  return showValue(tournament.highestUtrPlayer);
+}
+
+function App() {
+  const [filters, setFilters] = useState(loadSavedFilters);
+  const [tournaments, setTournaments] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [dataSource, setDataSource] = useState("");
+  const [total, setTotal] = useState(0);
+  const [status, setStatus] = useState("loading");
+  const [errorMessage, setErrorMessage] = useState("");
   const [userLocation, setUserLocation] = useState(null);
   const [locationMessage, setLocationMessage] = useState("");
-
-  const [sourceFilter, setSourceFilter] = useState("All");
-  const [categoryFilter, setCategoryFilter] = useState("All");
-  const [maxPrice, setMaxPrice] = useState(500);
-  const [sortOption, setSortOption] = useState("date");
-
   const [aiQuestion, setAiQuestion] = useState("");
   const [aiMessage, setAiMessage] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
 
-  const API_BASE = "http://localhost:5000";
+  const updateFilter = (name, value) => {
+    setFilters((current) => ({
+      ...current,
+      [name]: value
+    }));
+  };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "TBD";
+  const buildParams = useCallback(() => {
+    const params = {};
 
-    const date = new Date(dateString);
-
-    if (Number.isNaN(date.getTime())) {
-      return dateString;
-    }
-
-    return date.toLocaleString([], {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit"
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== "" && value !== "All") {
+        params[key] = value;
+      }
     });
-  };
 
-  const getDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 3958.8;
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLon = ((lon2 - lon1) * Math.PI) / 180;
-
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  };
-
-  const convertDate = (dateString) => {
-    if (!dateString) return new Date(9999, 0, 1);
-    const date = new Date(dateString);
-    if (!Number.isNaN(date.getTime())) return date;
-
-    const [datePart, timePart] = dateString.split(" ");
-    if (!datePart || !timePart) return new Date(9999, 0, 1);
-
-    const match = timePart.match(/(\d+):(\d+)(AM|PM)/);
-    if (!match) return new Date(9999, 0, 1);
-
-    let hours = Number(match[1]);
-    const minutes = Number(match[2]);
-    const period = match[3];
-
-    if (period === "PM" && hours !== 12) hours += 12;
-    if (period === "AM" && hours === 12) hours = 0;
-
-    return new Date(
-      `${datePart}T${String(hours).padStart(2, "0")}:${String(minutes).padStart(
-        2,
-        "0"
-      )}:00`
-    );
-  };
-
-  const getMaxUtrFromLevel = (level) => {
-    if (!level) return 0;
-
-    const rangeMatch = level.match(/UTR\s*([\d.]+)\s*-\s*([\d.]+)/i);
-    if (rangeMatch) return parseFloat(rangeMatch[2]);
-
-    const singleMatch = level.match(/UTR\s*([\d.]+)/i);
-    if (singleMatch) return parseFloat(singleMatch[1]);
-
-    return 0;
-  };
-
-  const getTournamentHighestUtr = (tournament) => {
-    const directUtr = Number(tournament.highestUtrPlayer);
-
-    if (!Number.isNaN(directUtr) && directUtr > 0) {
-      return directUtr;
+    if (userLocation) {
+      params.lat = userLocation.latitude;
+      params.lon = userLocation.longitude;
+      params.maxMiles = filters.maxMiles;
     }
 
-    return getMaxUtrFromLevel(tournament.level);
-  };
+    return params;
+  }, [filters, userLocation]);
 
-  const showPlayers = (players) => {
-    if (players === 0 || players === "0") return "0";
-    if (players === null || players === undefined || players === "") return "TBD";
-    return players;
-  };
+  const fetchTournaments = useCallback(async () => {
+    setStatus("loading");
+    setErrorMessage("");
 
-  const showHighestUtrPlayer = (tournament) => {
-    const highest = tournament.highestUtrPlayer;
+    try {
+      const response = await axios.get(`${API_BASE}/api/tournaments`, {
+        params: buildParams()
+      });
 
-    if (highest !== null && highest !== undefined && highest !== "") {
-      return highest;
-    }
+      const payload = response.data;
 
-    const maxUtr = getMaxUtrFromLevel(tournament.level);
-
-    if (maxUtr > 0) {
-      return maxUtr;
-    }
-
-    return "TBD";
-  };
-
-  const sortTournaments = (data) => {
-    const sorted = [...data];
-
-    if (sortOption === "date") {
-      sorted.sort((a, b) => convertDate(a.date) - convertDate(b.date));
-    }
-
-    if (sortOption === "priceLow") {
-      sorted.sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
-    }
-
-    if (sortOption === "priceHigh") {
-      sorted.sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
-    }
-
-    if (sortOption === "distance") {
-      sorted.sort((a, b) => (a.distance ?? 9999) - (b.distance ?? 9999));
-    }
-
-    if (sortOption === "highestUtr") {
-      sorted.sort(
-        (a, b) => getTournamentHighestUtr(b) - getTournamentHighestUtr(a)
+      setTournaments(payload.tournaments || []);
+      setCities(payload.cities || []);
+      setDataSource(payload.dataSource || "");
+      setTotal(payload.total || 0);
+      setStatus("ready");
+    } catch (err) {
+      console.error(err);
+      setTournaments([]);
+      setStatus("error");
+      setErrorMessage(
+        `Could not load tournaments from ${API_BASE}. Check that the backend is running.`
       );
     }
+  }, [buildParams]);
 
-    return sorted;
-  };
+  useEffect(() => {
+    localStorage.setItem(SAVED_FILTERS_KEY, JSON.stringify(filters));
+  }, [filters]);
 
-  const applyFilters = (data) => {
-    let filtered = [...data];
+  useEffect(() => {
+    const timeout = window.setTimeout(fetchTournaments, 250);
+    return () => window.clearTimeout(timeout);
+  }, [fetchTournaments]);
 
-    if (sourceFilter !== "All") {
-      filtered = filtered.filter((t) => t.source === sourceFilter);
-    }
+  const groupedTournaments = useMemo(() => {
+    return tournaments.reduce((groups, tournament) => {
+      const label = getDayGroup(tournament.date);
 
-    if (categoryFilter !== "All") {
-      filtered = filtered.filter((t) => t.category === categoryFilter);
-    }
+      if (!groups[label]) {
+        groups[label] = [];
+      }
 
-    filtered = filtered.filter((t) => Number(t.price || 0) <= maxPrice);
-
-    return sortTournaments(filtered);
-  };
-
-  const fetchTournaments = () => {
-    axios
-      .get(`${API_BASE}/api/tournaments-db`)
-      .then((res) => {
-        let data = res.data.map((t) => ({
-          ...t,
-          price: Number(t.price || 0),
-          latitude: Number(t.latitude),
-          longitude: Number(t.longitude)
-        }));
-
-        let originLocation = userLocation;
-
-        if (city.trim() !== "") {
-          const matchingCity = data.find(
-            (t) => t.city.toLowerCase() === city.trim().toLowerCase()
-          );
-
-          if (matchingCity) {
-            originLocation = {
-              latitude: matchingCity.latitude,
-              longitude: matchingCity.longitude
-            };
-
-            setLocationMessage(
-              `Showing tournaments within ${maxMiles} miles of ${matchingCity.city}, ${matchingCity.state}.`
-            );
-          } else {
-            setLocationMessage("City not found in tournament list.");
-            setAllTournaments([]);
-            setTournaments([]);
-            return;
-          }
-        }
-
-        if (originLocation) {
-          data = data
-            .map((t) => {
-              const miles = getDistance(
-                originLocation.latitude,
-                originLocation.longitude,
-                t.latitude,
-                t.longitude
-              );
-
-              return {
-                ...t,
-                distance: Math.round(miles)
-              };
-            })
-            .filter((t) => t.distance <= maxMiles);
-        }
-
-        setAllTournaments(data);
-        setTournaments(applyFilters(data));
-      })
-      .catch((err) => {
-        console.error(err);
-        setLocationMessage("Could not load tournaments from SQL Server.");
-      });
-  };
+      groups[label].push(tournament);
+      return groups;
+    }, {});
+  }, [tournaments]);
 
   const resetFilters = () => {
-    setSourceFilter("All");
-    setCategoryFilter("All");
-    setMaxPrice(500);
-    setSortOption("date");
-    setCity("");
+    setFilters(defaultFilters);
+    setUserLocation(null);
     setLocationMessage("");
-    setTournaments(sortTournaments(allTournaments));
-  };
-
-  const askAiTennisPro = () => {
-    if (!aiQuestion.trim()) return;
-
-    const question = aiQuestion.toLowerCase();
-
-    if (
-      question.includes("highest utr") ||
-      question.includes("highest utrs") ||
-      question.includes("best utr") ||
-      question.includes("top utr")
-    ) {
-      const sorted = [...allTournaments].sort(
-        (a, b) => getTournamentHighestUtr(b) - getTournamentHighestUtr(a)
-      );
-
-      setSortOption("highestUtr");
-      setTournaments(applyFilters(sorted));
-      setAiMessage("Showing tournaments with the highest UTR levels first.");
-      return;
-    }
-
-    setAiLoading(true);
-    setAiMessage("AI Tennis Pro is thinking...");
-
-    axios
-      .post(`${API_BASE}/api/ai/ask`, {
-        question: aiQuestion
-      })
-      .then((res) => {
-        const data = res.data.tournaments || [];
-        setAiMessage(res.data.message);
-        setAllTournaments(data);
-        setTournaments(applyFilters(data));
-      })
-      .catch((err) => {
-        console.error(err);
-        setAiMessage("AI Tennis Pro had trouble answering.");
-      })
-      .finally(() => {
-        setAiLoading(false);
-      });
   };
 
   const useMyLocation = () => {
@@ -299,217 +191,374 @@ function App() {
           longitude: position.coords.longitude
         });
 
-        setLocationMessage("Location added. Click Search to filter by distance.");
+        updateFilter("sort", "distance");
+        setLocationMessage("Location added. Results are filtered by distance.");
       },
       () => {
         setUserLocation(null);
-        setLocationMessage(
-          "Location permission was denied. You can still search by city."
-        );
+        setLocationMessage("Location permission was denied.");
       }
     );
   };
 
-  useEffect(() => {
-    fetchTournaments();
-  }, []);
+  const applyPreset = (preset) => {
+    if (preset === "weekend") {
+      setFilters((current) => ({
+        ...current,
+        dateRange: "weekend",
+        sort: userLocation ? "distance" : "date"
+      }));
+      return;
+    }
 
-  useEffect(() => {
-    setTournaments(applyFilters(allTournaments));
-  }, [sourceFilter, categoryFilter, maxPrice, sortOption]);
+    if (preset === "cheap") {
+      setFilters((current) => ({
+        ...current,
+        maxPrice: 50,
+        sort: "priceLow"
+      }));
+      return;
+    }
+
+    if (preset === "junior") {
+      setFilters((current) => ({
+        ...current,
+        category: "Junior",
+        sort: "date"
+      }));
+      return;
+    }
+
+    if (preset === "utr") {
+      setFilters((current) => ({
+        ...current,
+        sort: "highestUtr"
+      }));
+    }
+  };
+
+  const askAiTennisPro = async () => {
+    if (!aiQuestion.trim()) return;
+
+    const question = aiQuestion.toLowerCase();
+
+    if (
+      question.includes("highest utr") ||
+      question.includes("best utr") ||
+      question.includes("top utr")
+    ) {
+      updateFilter("sort", "highestUtr");
+      setAiMessage("Sorted tournaments by highest UTR.");
+      return;
+    }
+
+    setAiLoading(true);
+    setAiMessage("AI Tennis Pro is thinking...");
+
+    try {
+      const response = await axios.post(`${API_BASE}/api/ai/ask`, {
+        question: aiQuestion
+      });
+
+      const data = response.data.tournaments || [];
+      setAiMessage(response.data.message);
+      setTournaments(data);
+    } catch (err) {
+      console.error(err);
+      setAiMessage("AI Tennis Pro needs a valid OPENROUTER_API_KEY.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   return (
-    <div className="page">
-      <section className="hero">
-        <p className="tagline">Find local tennis tournaments faster</p>
-        <h1>Tennis Tournament Finder</h1>
-        <p className="subtitle">
-          Search UTR, USTA, and local tennis events within driving distance.
-        </p>
-
-        <div className="searchBox">
-          <input
-            type="text"
-            placeholder="Search by city, like Portland"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-          />
-          <button onClick={fetchTournaments}>Search</button>
+    <main className="page">
+      <header className="appHeader">
+        <div>
+          <p className="eyebrow">Tournament discovery</p>
+          <h1>Tennis Tournament Finder</h1>
+          <p className="subtitle">
+            Search upcoming events by city, level, price, source, and distance.
+          </p>
         </div>
 
-        <div className="locationControls">
-          <button className="locationBtn" onClick={useMyLocation}>
-            Use My Location
-          </button>
-
-          <div className="sliderBox">
-            <label>Distance: {maxMiles} miles</label>
-            <input
-              type="range"
-              min="5"
-              max="250"
-              step="5"
-              value={maxMiles}
-              onChange={(e) => setMaxMiles(Number(e.target.value))}
-            />
-          </div>
-
-          {locationMessage && (
-            <p className="locationMessage">{locationMessage}</p>
-          )}
+        <div className="statusPanel">
+          <span>{status === "loading" ? "Loading" : `${tournaments.length} shown`}</span>
+          <strong>{total} total</strong>
+          {dataSource && <em>{dataSource.toUpperCase()} data</em>}
         </div>
+      </header>
+
+      <section className="quickActions" aria-label="Quick filters">
+        <button type="button" onClick={() => applyPreset("weekend")}>
+          This weekend
+        </button>
+        <button type="button" onClick={useMyLocation}>
+          Near me
+        </button>
+        <button type="button" onClick={() => applyPreset("cheap")}>
+          Under $50
+        </button>
+        <button type="button" onClick={() => applyPreset("junior")}>
+          Juniors
+        </button>
+        <button type="button" onClick={() => applyPreset("utr")}>
+          Highest UTR
+        </button>
       </section>
 
-      <section className="filters">
-        <div className="filterHeader">
-          <h2>Filters</h2>
-          <button className="resetBtn" onClick={resetFilters}>
-            Reset
-          </button>
-        </div>
-
-        <div className="filterGrid">
-          <div className="filterItem">
-            <label>Source</label>
-            <select
-              value={sourceFilter}
-              onChange={(e) => setSourceFilter(e.target.value)}
-            >
-              <option value="All">All Sources</option>
-              <option value="UTR">UTR</option>
-              <option value="USTA">USTA</option>
-              <option value="Local">Local</option>
-            </select>
+      <section className="workspace">
+        <aside className="filters" aria-label="Tournament filters">
+          <div className="filterHeader">
+            <h2>Filters</h2>
+            <button type="button" className="textButton" onClick={resetFilters}>
+              Reset
+            </button>
           </div>
 
-          <div className="filterItem">
-            <label>Category</label>
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-            >
-              <option value="All">All Categories</option>
-              <option value="Junior">Junior</option>
-              <option value="Adult">Adult</option>
-              <option value="Prize Money">Prize Money</option>
-            </select>
+          <label>
+            Search
+            <input
+              type="search"
+              placeholder="Name, level, source"
+              value={filters.q}
+              onChange={(event) => updateFilter("q", event.target.value)}
+            />
+          </label>
+
+          <label>
+            City
+            <input
+              list="city-options"
+              placeholder="Portland"
+              value={filters.city}
+              onChange={(event) => updateFilter("city", event.target.value)}
+            />
+            <datalist id="city-options">
+              {cities.map((city) => (
+                <option value={city} key={city} />
+              ))}
+            </datalist>
+          </label>
+
+          <div className="filterRow">
+            <label>
+              Source
+              <select
+                value={filters.source}
+                onChange={(event) => updateFilter("source", event.target.value)}
+              >
+                <option value="All">All</option>
+                <option value="UTR">UTR</option>
+                <option value="USTA">USTA</option>
+                <option value="Local">Local</option>
+              </select>
+            </label>
+
+            <label>
+              Category
+              <select
+                value={filters.category}
+                onChange={(event) => updateFilter("category", event.target.value)}
+              >
+                <option value="All">All</option>
+                <option value="Junior">Junior</option>
+                <option value="Adult">Adult</option>
+                <option value="Prize Money">Prize Money</option>
+              </select>
+            </label>
           </div>
 
-          <div className="filterItem">
-            <label>Max Price: ${maxPrice}</label>
+          <label>
+            Max price: ${filters.maxPrice}
             <input
               type="range"
               min="0"
               max="500"
               step="5"
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(Number(e.target.value))}
+              value={filters.maxPrice}
+              onChange={(event) => updateFilter("maxPrice", Number(event.target.value))}
             />
+          </label>
+
+          <div className="filterRow">
+            <label>
+              Min UTR
+              <input
+                type="number"
+                min="0"
+                max="16"
+                step="0.5"
+                placeholder="Any"
+                value={filters.minUtr}
+                onChange={(event) => updateFilter("minUtr", event.target.value)}
+              />
+            </label>
+
+            <label>
+              Max UTR
+              <input
+                type="number"
+                min="0"
+                max="16"
+                step="0.5"
+                placeholder="Any"
+                value={filters.maxUtr}
+                onChange={(event) => updateFilter("maxUtr", event.target.value)}
+              />
+            </label>
           </div>
 
-          <div className="filterItem">
-            <label>Sort By</label>
-            <select
-              value={sortOption}
-              onChange={(e) => setSortOption(e.target.value)}
-            >
-              <option value="date">Soonest Date</option>
-              <option value="distance">Closest</option>
-              <option value="priceLow">Cheapest</option>
-              <option value="priceHigh">Most Expensive</option>
-              <option value="highestUtr">Highest UTR</option>
-            </select>
-          </div>
-        </div>
-      </section>
+          <label>
+            Distance: {filters.maxMiles} miles
+            <input
+              type="range"
+              min="5"
+              max="250"
+              step="5"
+              value={filters.maxMiles}
+              onChange={(event) => updateFilter("maxMiles", Number(event.target.value))}
+              disabled={!userLocation}
+            />
+          </label>
 
-      <section className="results">
-        <h2>Upcoming Tournaments</h2>
-        <p className="resultCount">{tournaments.length} tournaments found</p>
+          {locationMessage && <p className="helperText">{locationMessage}</p>}
 
-        {tournaments.length === 0 ? (
-          <p className="empty">No tournaments found. Try changing your filters.</p>
-        ) : (
-          tournaments.map((t) => (
-            <div className="card" key={t.id}>
-              <div className="cardTop">
-                <span className={`badge ${(t.source || "local").toLowerCase()}`}>
-                  {t.source}
-                </span>
-                <span className="date">{formatDate(t.date)}</span>
-              </div>
-
-              <h3>{t.name}</h3>
-
-              <p className="location">
-                {t.city}, {t.state}
-                {t.distance !== undefined && ` • ${t.distance} miles away`}
-              </p>
-
-              <div className="details">
-                <p>
-                  <span>Level</span>
-                  {t.level}
-                </p>
-
-                <p>
-                  <span>Entry</span>${t.price}
-                </p>
-
-                <p>
-                  <span>Players</span>
-                  {showPlayers(t.players)}
-                </p>
-
-                <p>
-                  <span>Highest UTR Player</span>
-                  <strong className="utrBubble">
-                    {showHighestUtrPlayer(t)}
-                  </strong>
-                </p>
-              </div>
-
-              <a
-                className="registerBtn"
-                href={t.registrationLink}
-                target="_blank"
-                rel="noreferrer"
+          <div className="filterRow">
+            <label>
+              Date
+              <select
+                value={filters.dateRange}
+                onChange={(event) => updateFilter("dateRange", event.target.value)}
               >
-                Register
-              </a>
+                <option value="all">All</option>
+                <option value="future">Upcoming</option>
+                <option value="weekend">This weekend</option>
+              </select>
+            </label>
+
+            <label>
+              Sort
+              <select
+                value={filters.sort}
+                onChange={(event) => updateFilter("sort", event.target.value)}
+              >
+                <option value="date">Soonest</option>
+                <option value="distance">Closest</option>
+                <option value="priceLow">Cheapest</option>
+                <option value="priceHigh">Most expensive</option>
+                <option value="highestUtr">Highest UTR</option>
+              </select>
+            </label>
+          </div>
+        </aside>
+
+        <section className="results" aria-label="Tournament results">
+          {errorMessage && <div className="notice error">{errorMessage}</div>}
+
+          {dataSource === "json" && status === "ready" && (
+            <div className="notice">
+              Running from bundled sample data. Set DATA_SOURCE=sql to use SQL Server.
             </div>
-          ))
-        )}
+          )}
+
+          {status === "loading" && <div className="empty">Loading tournaments...</div>}
+
+          {status === "ready" && tournaments.length === 0 && (
+            <div className="empty">
+              <strong>No tournaments found.</strong>
+              <span>Try widening distance, price, date, or UTR filters.</span>
+            </div>
+          )}
+
+          {status === "ready" &&
+            Object.entries(groupedTournaments).map(([dateLabel, group]) => (
+              <section className="dayGroup" key={dateLabel}>
+                <div className="dayHeader">
+                  <h2>{dateLabel}</h2>
+                  <span>{group.length} events</span>
+                </div>
+
+                <div className="cardList">
+                  {group.map((tournament) => (
+                    <article className="card" key={tournament.id}>
+                      <div className="cardTop">
+                        <span className={`badge ${tournament.source.toLowerCase()}`}>
+                          {tournament.source}
+                        </span>
+                        <span className="date">{formatDate(tournament.date)}</span>
+                      </div>
+
+                      <h3>{tournament.name}</h3>
+                      <p className="location">
+                        {tournament.city}, {tournament.state}
+                        {tournament.distance !== null &&
+                          tournament.distance !== undefined &&
+                          `, ${tournament.distance} miles away`}
+                      </p>
+
+                      <dl className="details">
+                        <div>
+                          <dt>Category</dt>
+                          <dd>{tournament.category}</dd>
+                        </div>
+                        <div>
+                          <dt>Level</dt>
+                          <dd>{tournament.level}</dd>
+                        </div>
+                        <div>
+                          <dt>Entry</dt>
+                          <dd>${tournament.price}</dd>
+                        </div>
+                        <div>
+                          <dt>Players</dt>
+                          <dd>{showValue(tournament.players)}</dd>
+                        </div>
+                        <div>
+                          <dt>UTR Range</dt>
+                          <dd>{showUtrRange(tournament)}</dd>
+                        </div>
+                      </dl>
+
+                      {tournament.registrationLink ? (
+                        <a
+                          className="registerBtn"
+                          href={tournament.registrationLink}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Register
+                        </a>
+                      ) : (
+                        <span className="missingLink">No registration link</span>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ))}
+        </section>
       </section>
 
-      <div className="floatingAi">
-        <h3>AI Tennis Pro</h3>
-
-        <p>
-          Ask things like “show junior tournaments,” “find prize money
-          tournaments,” “show tournaments under $50,” or “highest UTR
-          tournaments.”
-        </p>
-
+      <aside className="floatingAi" aria-label="AI Tennis Pro">
+        <h2>AI Tennis Pro</h2>
         <div className="aiSearchBox">
           <input
             type="text"
-            placeholder="Ask AI Tennis Pro..."
+            placeholder="Ask a tournament question"
             value={aiQuestion}
-            onChange={(e) => setAiQuestion(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") askAiTennisPro();
+            onChange={(event) => setAiQuestion(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") askAiTennisPro();
             }}
           />
-
-          <button onClick={askAiTennisPro} disabled={aiLoading}>
-            {aiLoading ? "Thinking..." : "Ask AI"}
+          <button type="button" onClick={askAiTennisPro} disabled={aiLoading}>
+            {aiLoading ? "Thinking" : "Ask"}
           </button>
         </div>
-
         {aiMessage && <p className="aiMessage">{aiMessage}</p>}
-      </div>
-    </div>
+      </aside>
+    </main>
   );
 }
 

@@ -1,24 +1,16 @@
 const express = require("express");
 const router = express.Router();
 
-const tournaments = require("../data/tournaments.json");
+const { getTournamentSearch } = require("../services/tournamentService");
 
-router.get("/", (req, res) => {
-  const city = req.query.city?.toLowerCase() || "";
-
-  let filtered = tournaments;
-
-  if (city) {
-    filtered = filtered.filter((t) =>
-      t.city.toLowerCase().includes(city)
-    );
+router.get("/", async (req, res) => {
+  try {
+    const result = await getTournamentSearch(req.query);
+    res.json(result);
+  } catch (err) {
+    console.error("Tournament route failed:", err);
+    res.status(500).json({ error: err.message });
   }
-
-  filtered = [...filtered].sort((a, b) => {
-    return new Date(a.date) - new Date(b.date);
-  });
-
-  res.json(filtered);
 });
 
 module.exports = router;
